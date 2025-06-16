@@ -1,17 +1,33 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import type { InputHTMLAttributes } from 'react';
-import { useForm, type FieldValues } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
-const SignInReactHookForm = () => {
+// Creating schema in Zod
+const signUpSchema = z
+	.object({
+		email: z.string().email(),
+		password: z.string().min(10, 'Password must be 10 characters.'),
+		repeatPassword: z.string().min(10, 'Password must be 10. characters.'),
+	}) // in zod you can validate data using refine, you can execute like this
+	.refine((data) => data.password === data.repeatPassword, {
+		message: 'Password must be match',
+		path: ['repeatPassword'],
+	});
+
+// Schema Type in Zod
+type SingUpSchemaT = z.infer<typeof signUpSchema>;
+
+const SignInReactHookFormZod = () => {
 	const {
 		register,
 		handleSubmit,
 		formState: { errors, isSubmitting },
 		reset,
-		getValues,
-	} = useForm();
+	} = useForm<SingUpSchemaT>({ resolver: zodResolver(signUpSchema) });
 
 	// Submit function
-	const onSubmit = async (data: FieldValues) => {
+	const onSubmit = async (data: SingUpSchemaT) => {
 		await new Promise((resolve) => setTimeout(resolve, 1000));
 		console.log(data);
 
@@ -20,7 +36,7 @@ const SignInReactHookForm = () => {
 	return (
 		<form onSubmit={handleSubmit(onSubmit)} className="flex flex-col space-y-4">
 			<FormField
-				{...register('email', { required: 'Email is required' })}
+				{...register('email')}
 				label="Email Address"
 				type="email"
 				placeholder="Enter your email.."
@@ -29,17 +45,7 @@ const SignInReactHookForm = () => {
 			/>
 			{errors.email && <ErrorMessage error={`${errors.email.message}`} />}
 			<FormField
-				{...register('password', {
-					required: 'Password is required',
-					minLength: {
-						value: 10,
-						message: 'Password must be atleast 10 characters',
-					},
-					maxLength: {
-						value: 30,
-						message: 'Password must be less than 30 characters',
-					},
-				})}
+				{...register('password')}
 				label="Password"
 				type="password"
 				placeholder="Enter your password.."
@@ -48,19 +54,7 @@ const SignInReactHookForm = () => {
 			/>
 			{errors.password && <ErrorMessage error={`${errors.password.message}`} />}
 			<FormField
-				{...register('repeatPassword', {
-					required: 'Password is required',
-					minLength: {
-						value: 10,
-						message: 'Password must be atleast 10 characters',
-					},
-					maxLength: {
-						value: 30,
-						message: 'Password must be less than 30 characters',
-					},
-					validate: (value) =>
-						value === getValues('password') || 'Password must match!',
-				})}
+				{...register('repeatPassword')}
 				label="Repeat Password"
 				type="password"
 				placeholder="Repeat your password.."
@@ -83,7 +77,7 @@ const SignInReactHookForm = () => {
 	);
 };
 
-export default SignInReactHookForm;
+export default SignInReactHookFormZod;
 
 type FormFieldProps = {
 	label: string;
